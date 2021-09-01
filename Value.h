@@ -6,11 +6,6 @@
 class Value {
 	double m_value{};
 public:
-	size_t m_valCount{ 0 };
-	size_t m_varCount{ 0 };
-	size_t m_operCount{ 0 };
-	size_t m_tokenCount{ 0 };
-	size_t m_calcCount{ 0 };
 	Value() {
 		//std::cout << "Value(). count:" << ++m_valCount << std::endl;
 	};

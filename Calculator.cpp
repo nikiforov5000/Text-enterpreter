@@ -1,17 +1,17 @@
 #include "Calculator.h"
 
-const std::string Calculator::getUserInput(std::string& userInput) {
+const std::string getUserInput(std::string& userInput) {
 	std::getline(std::cin, userInput);
 	return userInput;
 }
-void Calculator::printTokens() {
-	for (auto x : m_tokens) {
+void printTokens(std::vector<Token> tokens) {
+	for (auto x : tokens) {
 		std::cout << x.m_str   << "_";
 	}
 	std::cout << std::endl;
 	std::cout << "----------" << std::endl;
 }
-int Calculator::getPrecedence(Token oper) {
+int getPrecedence(Token oper) {
 	switch (oper.m_type) {
 	case Type::PLUS:
 	case Type::MINUS: return 1;
@@ -22,16 +22,16 @@ int Calculator::getPrecedence(Token oper) {
 	default: return -1;
 	}
 }
-size_t Calculator::expLength() {
+size_t expLength(std::vector<Token> tokens, size_t tokenIndex) {
 	size_t length{};
 	size_t bracketCount{ 1 };
-	Token& currentToken{ m_tokens[m_tokenIndex] };
-	for (m_tokenIndex; m_tokenIndex < m_tokens.size() && bracketCount != 0; ) {
-		m_tokenIndex++;
-		if (m_tokenIndex >= m_tokens.size()) {
-			throw std::exception("[ERROR] [invalid input] Calculator::expLength() m_tokenIndex out of range");
+	Token& currentToken{ tokens[tokenIndex] };
+	for (tokenIndex; tokenIndex < tokens.size() && bracketCount != 0; ) {
+		tokenIndex++;
+		if (tokenIndex >= tokens.size()) {
+			throw std::exception("[ERROR] [invalid input] Calculator::expLength() tokenIndex out of range");
 		}
-		currentToken = m_tokens[m_tokenIndex];
+		currentToken = tokens[tokenIndex];
 		if (currentToken.m_type == Type::BROPEN) {
 			bracketCount++;
 		}
@@ -43,150 +43,151 @@ size_t Calculator::expLength() {
 	if (bracketCount != 0) {
 		throw std::exception("[ERROR] [invalid input] Calculator::expLength bracketCout failure");
 	}
-	m_tokenIndex -= length;
 	--length;
 	return length;
 }
-void Calculator::moveIndex() {
-	m_strIndex += m_tokens.back().m_str.length();
+bool isBracket(char ch) {
+	return ch == '(' || ch == ')';
 }
-bool Calculator::isBracket() {
-	return m_pos == '(' || m_pos == ')';
-}
-void Calculator::getOper() {
+Token getOper(std::string& userInput, size_t strIndex) {
 	std::string name{};
-	if (m_userInput[m_strIndex + 1] == '=') {
-		name = m_userInput.substr(m_strIndex, 2);
+	if (userInput[strIndex + 1] == '=') {
+		name = userInput.substr(strIndex, 2);
 		if (name == "+=") {
-			m_tokens.push_back(Token(name, Type::PLUSEQ));
+			return Token(name, Type::PLUSEQ);
 		}
 		if (name == "-=") {
-			m_tokens.push_back(Token(name, Type::MINEQ));
+			return Token(name, Type::MINEQ);
 		}
 		else {
 			throw std::exception("[ERROR] Calculator::getOper failure");
 		}
 	}
 	else {
-		name = m_userInput.substr(m_strIndex, 1);
+		name = userInput.substr(strIndex, 1);
 		if (name == "-") {
-			m_tokens.push_back(Token(name, Type::MINUS));
+			return Token(name, Type::MINUS);
 		}
 		else if (name == "+") {
-			m_tokens.push_back(Token(name, Type::PLUS));
+			return Token(name, Type::PLUS);
 		}
 		else if (name == "*") {
-			m_tokens.push_back(Token(name, Type::MULT));
+			return Token(name, Type::MULT);
 		}
 		else if (name == "/") {
-			m_tokens.push_back(Token(name, Type::DIV));
+			return Token(name, Type::DIV);
 		}
 		else if (name == "(") {
-			m_tokens.push_back(Token(name, Type::BROPEN));
+			return Token(name, Type::BROPEN);
 		}
 		else if (name == ")") {
-			m_tokens.push_back(Token(name, Type::BRCLOSE));
+			return Token(name, Type::BRCLOSE);
 		}
 		else if (name == "=") {
-			m_tokens.push_back(Token(name, Type::EQUAL));
+			return Token(name, Type::EQUAL);
 		}
 		else {
-			std::cout << m_userInput[m_strIndex];
+			std::cout << userInput[strIndex];
 			throw std::exception("[ERROR] Calculator::getOper failure");
 		}
 	}
 }
-bool Calculator::isOper() {
-	return m_pos == '+' ||
-		   m_pos == '-' ||
-		   m_pos == '*' ||
-		   m_pos == '/' ||
-		   m_pos == '=';
+bool isOper(char ch) {
+	return ch == '+' ||
+		   ch == '-' ||
+		   ch == '*' ||
+		   ch == '/' ||
+		   ch == '=';
 }
-
-bool Calculator::isDigit() {
-	return (m_pos > 47 && m_pos < 58) || m_pos == '.';
+bool isDigit(char& ch) {
+	return (ch > 47 && ch < 58) || ch == '.';
 }
-void Calculator::getDigit() {
+Token getDigit(std::string& userInput, size_t strIndex) {
 	std::string validSet{ "0123456789." };
-	size_t strEnd = m_userInput.find_first_not_of(validSet, m_strIndex);
+	size_t strEnd = userInput.find_first_not_of(validSet, strIndex);
 
-	if (strEnd == m_userInput.npos) {
-		strEnd = m_end;
+	if (strEnd == userInput.npos) {
+		strEnd = userInput.length();
 	}
-	std::string name{ m_userInput.substr(m_strIndex, strEnd - m_strIndex) };
+	std::string name{ userInput.substr(strIndex, strEnd - strIndex) };
 
 	std::regex twoDots("\.*\\.[0-9]*\\.");
 	std::smatch m;
 	if (name == "." || std::regex_search(name, m, twoDots)) {
-		//std::cout << "=================" << m.str() << "_in_" << name << std::endl;
 		throw std::exception("[ERROR] [invalid input] invalid point in number");
 	}
-	m_tokens.push_back(Token(name, Type::NUM));
-	for (auto x : m_tokens.back().m_str) {
+	for (auto x : name) {
 		if (!((x > 47 && x < 58) || (x == '.'))) {
-			std::cout << "\"" << x << "\" in token \"" << m_tokens.back().m_str << "\"" << std::endl;
+			std::cout << "\"" << x << "\" in token \"" << name << "\"" << std::endl;
 			throw std::exception("[ERROR] Calculator::getDigit NOT a digit");
 		}
 	}
+	return Token(name, Type::NUM);
+
 }
-void Calculator::getVarName() {
+Token getVarName(std::string& userInput, size_t strIndex) {
 	std::string validSet{ "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" };
-	size_t strEnd = m_userInput.find_first_not_of(validSet, m_strIndex);
-	if (strEnd == m_userInput.npos) {
-		strEnd = m_end;
+	size_t strEnd = userInput.find_first_not_of(validSet, strIndex);
+	if (strEnd == userInput.npos) {
+		strEnd = userInput.length();
 	}
-	std::string name{ m_userInput.substr(m_strIndex, strEnd - m_strIndex) };
-	m_tokens.push_back(Token(name, Type::VAR));
+	std::string name{ userInput.substr(strIndex, strEnd - strIndex) };
 	if (name[0] < 65 || name[0] > 122) {
 		throw std::exception("[ERROR] Calculator::getDigit NOT a digit");
 	}
+	return Token(name, Type::VAR);
 }
-bool Calculator::isChar() {
-	return m_pos >= 65 && m_pos <= 122;
+bool isChar(char ch) {
+	return ch >= 65 && ch <= 122;
 }
-void Calculator::GetTokens() {
+const std::vector<Token> GetTokens(std::string& userInput) {
+	std::vector<Token> tokens;
+	size_t strEnd{ userInput.length() };
+	size_t strIndex{ 0 };
+	char pos{userInput[0]};
 	int operCounter{ 0 };
 	int bracketCounter{ 0 };
-	while (m_strIndex < m_end) {
-		m_pos = m_userInput[m_strIndex];
-		if (m_pos == ' ' || m_pos == '	') {
-			m_strIndex++;
+
+	while (strIndex < strEnd) {
+		pos = userInput[strIndex];
+		if (pos == ' ' || pos == '	') {
+			strIndex++;
 			continue;
 		}
-		if (isChar()) {
-			getVarName();
+		if (isChar(pos)) {
+			tokens.push_back(getVarName(userInput, strIndex));
 			++operCounter;
 		}
-		else if (isDigit()) {
-			getDigit();
+		else if (isDigit(pos)) {
+			tokens.push_back(getDigit(userInput, strIndex));
 			++operCounter;
 		}
-		else if (isOper()) {
-			getOper();
+		else if (isOper(pos)) {
+			tokens.push_back(getOper(userInput, strIndex));
 			--operCounter;
 		}
-		else if (isBracket()) {
-			m_pos == '(' ? ++bracketCounter : --bracketCounter;
-			getOper();
+		else if (isBracket(pos)) {
+			pos == '(' ? ++bracketCounter : --bracketCounter;
+			tokens.push_back(getOper(userInput, strIndex));
 		}
 		else {
 			throw std::exception("[ERROR] [invalid input] [invalid character] Calculator::GetTokens() ");
 		}
-		moveIndex();
+		strIndex += tokens.back().m_str.length();
 	}
 	if (operCounter != 1 || bracketCounter != 0) {
 		throw std::exception("[ERROR] [invalid input] [invalid character order] Calculator::GetTokens() ");
 	}
 	//printTokens();
+	return tokens;
 }
-Value Calculator::evaluate(size_t endToken) {
+Value Calculator::evaluate(std::vector<Token> tokens, size_t tokenIndex, size_t endToken) {
 	std::stack<Value> values{};
 	std::stack<Token> opers{};
 	Value val;
-	int valCount{ 0 };
-	while (m_tokenIndex < endToken) {
-		Token& currentToken = m_tokens[m_tokenIndex];
+	size_t valCount{ 0 };
+	while (tokenIndex < endToken) {
+		Token& currentToken = tokens[tokenIndex];
 		if (currentToken.m_type == Type::VAR) {
 			if (m_userVariables.contains(currentToken.m_str)) {
 				val = (m_userVariables.find(currentToken.m_str))->second.GetValue();
@@ -203,8 +204,9 @@ Value Calculator::evaluate(size_t endToken) {
 		else {
 			valCount = 0;
 			if (currentToken.m_type == Type::BROPEN) {
-				size_t length{ expLength() };
-				val = evaluate(++m_tokenIndex + length);
+				size_t length{ expLength(tokens, tokenIndex) };
+				val = evaluate(tokens, tokenIndex, ++tokenIndex + length);
+				tokenIndex += length;
 			}
 			else if (values.empty()) {
 				values.push(val);
@@ -229,7 +231,7 @@ Value Calculator::evaluate(size_t endToken) {
 			}
 			else {
 				Token prevOper = opers.top();
-				if (getPrecedence(m_tokens[m_tokenIndex]) > getPrecedence(prevOper)) {
+				if (getPrecedence(tokens[tokenIndex]) > getPrecedence(prevOper)) {
 					values.push(val);
 					opers.push(currentToken);
 					val.SetValue(0);
@@ -247,7 +249,7 @@ Value Calculator::evaluate(size_t endToken) {
 				}
 			}
 		}
-		++m_tokenIndex;
+		++tokenIndex;
 	}
 	while (!opers.empty()) {
 		if (values.empty()) {
@@ -265,32 +267,30 @@ Value Calculator::evaluate(size_t endToken) {
 	}
 	return val;
 }
-Value Calculator::evaluate(std::string userInput) {
+Value Calculator::evaluate(std::string& userInput) {
+	/*
 	m_tokens.clear();
-	m_userInput = userInput;
 	m_strIndex = 0;
-	m_end = m_userInput.length();
-	m_pos = m_userInput[m_strIndex];
-	m_tokenIndex = 0;
-	GetTokens();
+	m_end = userInput.length();
+	m_pos = userInput[m_strIndex];
+	*/
+	std::vector<Token> tokens{ GetTokens(userInput) };
+ 	Value result;
 
- 	Value result{};
-	if (m_tokens[1].m_type != Type::EQUAL) {
-		m_tokenIndex = 0;
-		result = evaluate(m_tokens.size());
+	if (tokens[1].m_type != Type::EQUAL) {
+		result = evaluate(tokens, (size_t)0, tokens.size());
 		std::cout << "result:" << result.GetValue() << std::endl;;
 	}
 	else {
-		m_tokenIndex = 2;
-		result = evaluate(m_tokens.size());
-		if (m_userVariables.contains(m_tokens[0].m_str)) {
-			m_userVariables.find(m_tokens[0].m_str)->second.SetValue(result);
+		result = evaluate(tokens, (size_t)2, tokens.size());
+		if (m_userVariables.contains(tokens[0].m_str)) {
+			m_userVariables.find(tokens[0].m_str)->second.SetValue(result);
 		}
 		else {
-			std::string& name{ m_tokens[0].m_str };
+			std::string& name{ tokens[0].m_str };
 			m_userVariables.insert(std::make_pair(name, Variable(name, result)));
 		}
-		std::cout << m_tokens[0].m_str << "=" << result.GetValue() << std::endl;;
+		std::cout << tokens[0].m_str << "=" << result.GetValue() << std::endl;;
 	}
 	return result;
 }
