@@ -11,14 +11,14 @@
 
 class Calculator {
 	std::map<std::string, Variable> m_userVariables;
-	Value evaluate(std::vector<Token> tokens, size_t startToken, size_t endToken);
+	Value evaluate(const std::vector<Token>& tokens, size_t startToken, size_t endToken);
 
 public:
 	Calculator(){
 	 
 	};
 
-	Value evaluate(std::string& userInput);
+	Value evaluate(const std::string& userInput);
 
 	~Calculator() {
 	 

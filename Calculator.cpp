@@ -1,10 +1,6 @@
 #include "Calculator.h"
 
-const std::string getUserInput(std::string& userInput) {
-	std::getline(std::cin, userInput);
-	return userInput;
-}
-void printTokens(std::vector<Token> tokens) {
+void printTokens(std::vector<Token>& tokens) {
 	for (auto x : tokens) {
 		std::cout << x.m_str   << "_";
 	}
@@ -22,10 +18,10 @@ int getPrecedence(Token oper) {
 	default: return -1;
 	}
 }
-size_t expLength(std::vector<Token> tokens, size_t tokenIndex) {
+size_t expLength(const std::vector<Token>& tokens, size_t tokenIndex) {
 	size_t length{};
 	size_t bracketCount{ 1 };
-	Token& currentToken{ tokens[tokenIndex] };
+	Token currentToken{ tokens[tokenIndex] };
 	for (tokenIndex; tokenIndex < tokens.size() && bracketCount != 0; ) {
 		tokenIndex++;
 		if (tokenIndex >= tokens.size()) {
@@ -49,7 +45,7 @@ size_t expLength(std::vector<Token> tokens, size_t tokenIndex) {
 bool isBracket(char ch) {
 	return ch == '(' || ch == ')';
 }
-Token getOper(std::string& userInput, size_t strIndex) {
+Token getOper(const std::string& userInput, size_t strIndex) {
 	std::string name{};
 	if (userInput[strIndex + 1] == '=') {
 		name = userInput.substr(strIndex, 2);
@@ -99,10 +95,10 @@ bool isOper(char ch) {
 		   ch == '/' ||
 		   ch == '=';
 }
-bool isDigit(char& ch) {
+bool isDigit(char ch) {
 	return (ch > 47 && ch < 58) || ch == '.';
 }
-Token getDigit(std::string& userInput, size_t strIndex) {
+Token getDigit(const std::string& userInput, size_t strIndex) {
 	std::string validSet{ "0123456789." };
 	size_t strEnd = userInput.find_first_not_of(validSet, strIndex);
 
@@ -125,7 +121,7 @@ Token getDigit(std::string& userInput, size_t strIndex) {
 	return Token(name, Type::NUM);
 
 }
-Token getVarName(std::string& userInput, size_t strIndex) {
+Token getVarName(const std::string& userInput, size_t strIndex) {
 	std::string validSet{ "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" };
 	size_t strEnd = userInput.find_first_not_of(validSet, strIndex);
 	if (strEnd == userInput.npos) {
@@ -140,7 +136,7 @@ Token getVarName(std::string& userInput, size_t strIndex) {
 bool isChar(char ch) {
 	return ch >= 65 && ch <= 122;
 }
-const std::vector<Token> GetTokens(std::string& userInput) {
+const std::vector<Token> GetTokens(const std::string& userInput) {
 	std::vector<Token> tokens;
 	size_t strEnd{ userInput.length() };
 	size_t strIndex{ 0 };
@@ -181,13 +177,13 @@ const std::vector<Token> GetTokens(std::string& userInput) {
 	//printTokens();
 	return tokens;
 }
-Value Calculator::evaluate(std::vector<Token> tokens, size_t tokenIndex, size_t endToken) {
+Value Calculator::evaluate(const std::vector<Token>& tokens, size_t tokenIndex, size_t endToken) {
 	std::stack<Value> values{};
 	std::stack<Token> opers{};
 	Value val;
 	size_t valCount{ 0 };
 	while (tokenIndex < endToken) {
-		Token& currentToken = tokens[tokenIndex];
+		Token currentToken = tokens[tokenIndex];
 		if (currentToken.m_type == Type::VAR) {
 			if (m_userVariables.contains(currentToken.m_str)) {
 				val = (m_userVariables.find(currentToken.m_str))->second.GetValue();
@@ -267,13 +263,7 @@ Value Calculator::evaluate(std::vector<Token> tokens, size_t tokenIndex, size_t 
 	}
 	return val;
 }
-Value Calculator::evaluate(std::string& userInput) {
-	/*
-	m_tokens.clear();
-	m_strIndex = 0;
-	m_end = userInput.length();
-	m_pos = userInput[m_strIndex];
-	*/
+Value Calculator::evaluate(const std::string& userInput) {
 	std::vector<Token> tokens{ GetTokens(userInput) };
  	Value result;
 
