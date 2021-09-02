@@ -1,4 +1,4 @@
-# Text enterpreter / Calculator
+# Text interpreter / Calculator
 Text interpreter
 - accept a string
 - convert into a vector of token
