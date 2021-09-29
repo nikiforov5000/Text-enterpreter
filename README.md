@@ -8,9 +8,9 @@ Text interpreter
 - reduce member variables
 - reduce class methods
 - update tests
+- parse file to tokens.
 
 TODO
-- parse file to tokens.
 - evaluate(vector of tokens).
 - add Read(filename) function in test.cpp.
 - make all possible methods private.
